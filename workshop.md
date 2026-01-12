@@ -51,4 +51,9 @@ spec:
 * 멀티 아키텍처 실무: 대학원생들이 나중에 기업 연구소에 갔을 때 필수적인 Docker buildx를 이용한 멀티 아키텍처 빌드 과정을 실습에 포함하세요.
 
 
+### 전체 시스템 시퀀스 (Data Flow) ###
+
+* TX Pod (x86 + GPU): Sionna로 신호 생성 → Little-Endian 바이너리 직렬화 → UDP 전송
+* L2/L3 Pod (Graviton): UDP 수신 → 패킷 분석 및 스케줄링(L2 로직) → 제어 헤더 부착 → UDP 포워딩
+* RX Pod (x86 + GPU): UDP 수신 → 헤더 분리 및 시퀀스 확인 → Sionna RT/Neural RX로 신호 복원
 
