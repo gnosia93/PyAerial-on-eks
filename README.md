@@ -90,4 +90,26 @@ Sionna로 만드신 코드는 대부분 L1(물리 계층, PHY)에 해당합니�
 * 역할: PyAerial 또는 Sionna 수신기.
 * 작업: 전달받은 IQ 샘플을 다시 비트로 복원(Demodulation/Decoding)하여 최종 성능(BER, Throughput)을 측정합니다.
 
+-----
+* 1. TX/RX Pod (x86 + GPU 노드용)
+```
+spec:
+  nodeSelector:
+    kubernetes.io/arch: amd64
+    accelerator: nvidia-gpu # GPU 노드 그룹 라벨
+```
+
+* 2. L2/L3 Pod (Graviton 노드용)
+```
+spec:
+  nodeSelector:
+    kubernetes.io/arch: arm64 # Graviton(ARM) 노드로 배정
+```
+
+#### 추가 고려사항: 파드 간 통신 (Data Path) ####
+이 구조에서 가장 중요한 것은 TX → L2/L3 → RX로 넘어가는 엄청난 양의 IQ 샘플 데이터를 어떻게 지연 없이 전달하느냐입니다.
+* gRPC/UDP: 파드 간 네트워크 통신 (구현이 쉽지만 오버헤드 있음)
+* Shared Memory (HostPath): 같은 노드에 띄울 경우 메모리를 공유하여 제로 카피(Zero-copy) 전송 가능
+
+
 
