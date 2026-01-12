@@ -121,3 +121,26 @@ GPU 노드와 Graviton 노드 사이의 통신은 다음 3단계로 이루어집
 🚀 성능 최적화 대안: gRPC 대신 'UDP Raw Socket'
 * Sionna 실시간 신호 전송처럼 데이터 양이 많을 때는 TCP 기반의 gRPC보다 UDP가 유리합니다. 특히 Graviton 노드에서 고성능 네트워크 인터페이스(ENA)를 활용하면 패킷 손실을 최소화하며 전송할 수 있습니다.
 
+```
+import socket
+
+# RX Pod의 서비스 주소 (LoadBalancer 또는 ClusterIP)
+RX_ADDRESS = ("rx-service-address", 50051)
+sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+def forward_to_rx(packet_id, iq_samples):
+    # 1. L3 헤더 생성 (단순 예시: 패킷 번호 + 타임스탬프)
+    header = np.array([packet_id, time.time()], dtype=np.float64)
+    
+    # 2. 데이터 결합 (헤더 + IQ 샘플)
+    packet = header.tobytes() + iq_samples.tobytes()
+    
+    # 3. RX Pod로 전송 (UDP)
+    sock.sendto(packet, RX_ADDRESS)
+
+```
+아키텍처 포인트
+* 컴파일 최적화: Graviton에서 돌아갈 이 중계 코드는 ARM64 전용 이미지로 빌드해야 합니다.
+* 대역폭 확보: EKS에서 c7g.4xlarge 같은 Network Optimized Graviton 인스턴스를 사용하면 노드 간 10~25Gbps 이상의 대역폭을 확보할 수 있어 병목 현상을 줄일 수 있습니다.
+* 이제 TX(Sionna) → L2/L3(Graviton) → RX(PyAerial)로 이어지는 전체 흐름을 통합할 EKS 멀티 아키텍처 배포 전략을 짜볼까요?
+
