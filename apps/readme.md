@@ -63,3 +63,98 @@ CMD ["python", "signal_gen.py"]
 * GPU 할당: 이 Pod은 신호를 실시간으로 "계산"해서 만들어내므로 NVIDIA GPU Operator를 통해 nvidia.com: 1 리소스 할당이 필요합니다.
 데이터 전달: 생성된 iq_samples를 PyAerial Pod로 보낼 때, 성능 손실을 줄이려면 gRPC 스트리밍을 사용해 데이터를 직렬화하여 쏘는 루틴을 위 while 문 안에 추가해야 합니다.
 이 신호 생성기 코드에 gRPC 전송 로직까지 포함된 전체 샘플이 필요하신가요? 아니면 Shared Memory 설정용 YAML이 더 궁금하신가요?
+
+## gRPC ##
+실시간 신호 처리 환경을 위한 gRPC 기반 송신 코드와 Pod 간 초고속 데이터 공유를 위한 Shared Memory(POSIX) 설정 YAML 샘플입니다.
+1. gRPC 로직이 추가된 [Sionna Pod] 코드
+이 코드는 신호를 생성하여 다른 Pod(PyAerial)로 끊임없이 스트리밍합니다.
+```
+proto 정의 (signal.proto)
+proto
+syntax = "proto3";
+
+service SignalStreamer {
+  rpc StreamIQ (stream IQData) returns (Empty) {}
+}
+
+message IQData {
+  bytes samples = 1; // 변환된 complex64 바이너리 데이터
+  int32 batch_size = 2;
+}
+
+message Empty {}
+```
+
+Python 송신부 (signal_gen_grpc.py)
+```
+import grpc
+import signal_pb2, signal_pb2_grpc
+import sionna as sn
+import tensorflow as tf
+
+class SignalGenStreamer:
+    def __init__(self, target_address='pyaerial-service:50051'):
+        self.channel = grpc.insecure_channel(target_address)
+        self.stub = signal_pb2_grpc.SignalStreamerStub(self.channel)
+        # Sionna 설정
+        self.binary_source = sn.utils.BinarySource()
+        self.qam_source = sn.utils.QAMSource(num_bits_per_symbol=4) # 16QAM
+
+    def generate_and_stream(self):
+        def request_generator():
+            while True:
+                # 1. 신호 생성 (Sionna)
+                bits = self.binary_source([64, 1024])
+                x = self.qam_source(bits)
+                
+                # 2. 바이너리로 직렬화 (Complex64 -> Bytes)
+                iq_bytes = x.numpy().tobytes()
+                
+                # 3. gRPC 메시지로 포장
+                yield signal_pb2.IQData(samples=iq_bytes, batch_size=64)
+        
+        # 스트리밍 시작
+        self.stub.StreamIQ(request_generator())
+
+if __name__ == "__main__":
+    streamer = SignalGenStreamer()
+    streamer.generate_and_stream()
+```
+
+## 2. Shared Memory 설정용 K8s YAML ##
+gRPC보다 더 빠른 데이터 전달이 필요할 때 사용하는 방식입니다. /dev/shm을 공유하여 메모리 복사 없이 데이터를 주고받습니다.
+Kubernetes Shared Memory 가이드에 따라 emptyDir의 매체를 Memory로 설정합니다.
+
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: aerial-testbed
+spec:
+  containers:
+  - name: sionna-gen
+    image: my-sionna-gen:latest
+    resources:
+      limits:
+        nvidia.com: 1  # GPU 가속 필요
+    volumeMounts:
+    - mountPath: /dev/shm
+      name: dshm
+  - name: pyaerial-rx
+    image: nvidia-pyaerial:latest
+    resources:
+      limits:
+        nvidia.com: 1
+    volumeMounts:
+    - mountPath: /dev/shm
+      name: dshm
+  volumes:
+  - name: dshm
+    emptyDir:
+      medium: Memory
+      sizeLimit: "2Gi" # 생성할 신호 데이터 크기에 맞게 조절
+```
+아키텍처 구현 핵심 포인트
+* gRPC 방식: Pod가 서로 다른 노드에 있어도 작동하므로 확장성이 좋습니다.
+* Shared Memory 방식: 한 노드(EC2 G5 등) 안에서만 작동하지만, 지연 시간이 거의 없습니다. 실시간 L1 처리에 강력히 추천합니다.
+* Docker 공유: Shared Memory를 쓰려면 두 컨테이너가 동일한 IPC 네임스페이스를 공유해야 할 수도 있으므로, 필요시 hostIPC: true 설정을 쿠버네티스 공식 문서를 참조하여 추가하세요.
