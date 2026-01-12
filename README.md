@@ -1,5 +1,7 @@
 # aerial-on-eks
 
+![](https://github.com/gnosia93/get-started-eks/blob/main/images/workshop-arch.png)
+
 
 ### _Topics_ ###
 
