@@ -75,8 +75,9 @@ source ~/.bashrc
 ```
 go 컴파일 과정에서 다소 시간이 소요된다.
 
-#### 6. pip 설치 ####
+#### 6. python 설정 및 pip 설치 ####
 ```
+sudo dnf install python-unversioned-command
 sudo dnf install python3-pip
 ```
 
