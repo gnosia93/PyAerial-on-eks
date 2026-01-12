@@ -100,6 +100,15 @@ EOF
 
 ```
 kubectl apply -f nodepool-gpu.yaml
+kubectl get ec2nodeclass,nodepool
+```
+[결과]
+```
+NAME                                 READY   AGE
+ec2nodeclass.karpenter.k8s.aws/gpu   True    29s
+
+NAME                        NODECLASS   NODES   READY   AGE
+nodepool.karpenter.sh/gpu   gpu         1       True    29s
 ```
 
 ## nvidia-smi 파드 스케줄링 ##
