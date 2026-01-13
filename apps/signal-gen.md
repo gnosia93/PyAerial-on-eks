@@ -112,6 +112,26 @@ COPY signal_gen.py /app/signal_gen.py
 CMD ["python", "signal_gen.py"]
 ```
 
+## 도커 빌드 / ecr 푸시 ##
+```
+AWS_REGION="ap-northeast-2"
+ACCOUNT_ID="123456789012"
+REPO_NAME="sionna-generator"
+IMAGE_TAG="latest"
+ECR_URL="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+```
+
+```
+aws ecr create-repository --repository-name sionna-generator --region ap-northeast-2
+docker build -t ${REPO_NAME} .
+docker tag ${REPO_NAME}:${IMAGE_TAG} ${ECR_URL}/${REPO_NAME}:${IMAGE_TAG}
+
+aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_URL}
+docker push ${ECR_URL}/${REPO_NAME}:${IMAGE_TAG}
+```
+
+
+
 ### 아키텍처 구현 핵심 포인트 ###
 * gRPC 방식: Pod가 서로 다른 노드에 있어도 작동하므로 확장성이 좋습니다.
 * Shared Memory 방식: 한 노드(EC2 G5 등) 안에서만 작동하지만, 지연 시간이 거의 없습니다. 실시간 L1 처리에 강력히 추천합니다.
