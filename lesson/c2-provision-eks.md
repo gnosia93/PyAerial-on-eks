@@ -300,7 +300,13 @@ for p in $(aws iam list-role-policies --role-name "$ROLE_NAME" --query 'PolicyNa
 for i in $(aws iam list-instance-profiles-for-role --role-name "$ROLE_NAME" --query 'InstanceProfiles[*].InstanceProfileName' --output text); do aws iam remove-role-from-instance-profile --instance-profile-name "$i" --role-name "$ROLE_NAME"; aws iam delete-instance-profile --instance-profile-name "$i"; done
 aws iam delete-role --role-name "$ROLE_NAME"
 ```
-#### 2. 클러스터 삭제 ####
+
+#### 2. 시큐리티 그룹 삭제 ####
+```
+eks-cluster-sg-aerial-on-eks-106553210
+```
+
+#### 3. 클러스터 삭제 ####
 ```
 eksctl delete cluster -f cluster.yaml
 ```
