@@ -14,6 +14,6 @@
 * [C4. 시그널 제너레이터 배포](https://github.com/gnosia93/aerial-on-eks/blob/main/apps/signal-generator.md)
 
 
-### _Appendix ###
+### _Appendix_ ###
 
 * [C4. VS Code 노트북 실행하기](https://github.com/gnosia93/aerial-on-eks/blob/main/lesson/c4-vs-code-notebook.md)
