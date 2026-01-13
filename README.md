@@ -2,7 +2,7 @@
 
 ![](https://github.com/gnosia93/aerial-on-eks/blob/main/images/workshop-arch-aerial.png)
 
-### _O-RAN(Open RAN) 아키텍처_ ###
+### _O-RAN(Open Radio Access Network) 아키텍처_ ###
 
 * Sionna GPU Pod -> gRPC -> PyAreal GPU Pod
 * Sinnoa GPU Pod -> gRPC -> Graviton L2/L3 stack -> gRPC -> PyAreal GPU Pod 
