@@ -145,7 +145,7 @@ metadata:
 spec:
   containers:
   - name: sionna-container
-    image: ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com     # 이미지 주소는 본인의 ECR 주소로 수정
+    image: ${ECR_URL}/${REPO_NAME}:latest     
     
     # gRPC 연결을 위한 환경 변수 설정 (코드 내에서 os.environ으로 참조 가능)
     env:
