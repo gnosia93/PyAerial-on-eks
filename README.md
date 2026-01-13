@@ -11,7 +11,6 @@
   * Shared Memory (Zero-Copy Interface / Sionna 와 PyAreal 가 동일 Pod를 사용하는 경우만 지원)
   * UDP (eCPRI / Raw Socket 기반)
   * gRPC TPC/IP  
-
 * Sionna (단말기): 1010 데이터를 무선 신호로 만들어 송신.
 * PyAerial (기지국 L1/GPU):
 * 신호 복구: 내부의 TensorFlow 모델이 오염된 신호를 받아 1010으로 복구.
