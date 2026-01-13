@@ -111,7 +111,8 @@ sionna>=0.14.0
 grpcio>=1.50.0
 grpcio-tools>=1.50.0
 protobuf>=4.21.0
-numpy<2.0.0
+numpy>=1.23.5,<1.24
+FuzzyTM>=0.4.0
 ```
 
 ## Dockerfile ##
