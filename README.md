@@ -2,6 +2,11 @@
 
 ![](https://github.com/gnosia93/get-started-eks/blob/main/images/workshop-arch-2.png)
 
+### _Data Flow_ ###
+
+* Sionna GPU Pod -> gRPC -> PyAreal GPU Pod
+* Sinnoa GPU Pod -> gRPC -> Graviton L2/L3 stack -> gRPC -> PyAreal GPU Pod 
+* Sinnoa GPU Pod -> gRPC -> Graviton L2/L3 stack -> gRPC -> PyAreal GPU Pod -> Prometheus/Grafna dashboard (BER 측정/시각화)
 
 ### _Topics_ ###
 
