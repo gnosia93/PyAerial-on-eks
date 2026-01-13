@@ -76,12 +76,16 @@ try:
 except KeyboardInterrupt:
     print("전송 중단")
 ```
+* 데이터 타입: 코드의 iq_samples는 complex64인데, 이를 바이너리로 변환하여 전송할 때 엔디안(Endian)이나 메모리 레이아웃이 PyAerial 측 규격(보통 int16 I/Q로 변환이 필요한 경우도 있음)과 맞는지 확인이 필요합니다.
 * PyAerial Pod 측(Server)에서는 수신한 bytes 데이터를 np.frombuffer(request.iq_data, dtype=np.complex64).reshape(request.shape)로 복원하여 cuPHY 파이프라인에 주입할 수 있습니다. 
 * 수신 측에서 NVIDIA Aerial SDK의 어떤 모듈(예: PUSCH/PDSCH 디코더)로 데이터를 넘길 계획이신가요?
 
 
 ## Dockerfile ##
 Sionna는 GPU 가속을 위해 NVIDIA TensorFlow 컨테이너 위에서 돌리는 것이 가장 좋다.
+Sionna는 TensorFlow를 기반으로 작동하기 때문에 별도의 GPU가 없으면 자동으로 CPU를 사용하여 연산을 수행한다.
+하지만 Sionna는 대규모 병렬 연산(Monte-Carlo 시뮬레이션 등)에 최적화되어 있어, GPU(CUDA) 사용 시 수십~수백 배 더 빠르다. 
+CPU 환경이라면 batch_size를 적절히 조절하여 지연 시간(Latency)을 체크해 보시는 것이 좋다.
 ```
 FROM nvcr.io/nvidia/tensorflow:23.10-tf2-py3
 
@@ -92,108 +96,9 @@ COPY signal_gen.py /app/signal_gen.py
 CMD ["python", "signal_gen.py"]
 ```
 
-## gRPC ##
-실시간 신호 처리 환경을 위한 gRPC 기반 송신 코드와 Pod 간 초고속 데이터 공유를 위한 Shared Memory(POSIX) 설정 YAML 샘플입니다.
-1. gRPC 로직이 추가된 [Sionna Pod] 코드
-이 코드는 신호를 생성하여 다른 Pod(PyAerial)로 끊임없이 스트리밍합니다.
-```
-proto 정의 (signal.proto)
-proto
-syntax = "proto3";
-
-service SignalStreamer {
-  rpc StreamIQ (stream IQData) returns (Empty) {}
-}
-
-message IQData {
-  bytes samples = 1; // 변환된 complex64 바이너리 데이터
-  int32 batch_size = 2;
-}
-
-message Empty {}
-```
-
-Python 송신부 (signal_gen_grpc.py)
-```
-import grpc
-import signal_pb2, signal_pb2_grpc
-import sionna as sn
-import tensorflow as tf
-
-class SignalGenStreamer:
-    def __init__(self, target_address='pyaerial-service:50051'):
-        self.channel = grpc.insecure_channel(target_address)
-        self.stub = signal_pb2_grpc.SignalStreamerStub(self.channel)
-        # Sionna 설정
-        self.binary_source = sn.utils.BinarySource()
-        self.qam_source = sn.utils.QAMSource(num_bits_per_symbol=4) # 16QAM
-
-    def generate_and_stream(self):
-        def request_generator():
-            while True:
-                # 1. 신호 생성 (Sionna)
-                bits = self.binary_source([64, 1024])
-                x = self.qam_source(bits)
-                
-                # 2. 바이너리로 직렬화 (Complex64 -> Bytes)
-                iq_bytes = x.numpy().tobytes()
-                
-                # 3. gRPC 메시지로 포장
-                yield signal_pb2.IQData(samples=iq_bytes, batch_size=64)
-        
-        # 스트리밍 시작
-        self.stub.StreamIQ(request_generator())
-
-if __name__ == "__main__":
-    streamer = SignalGenStreamer()
-    streamer.generate_and_stream()
-```
-
-## 2. Shared Memory 설정용 K8s YAML ##
-gRPC보다 더 빠른 데이터 전달이 필요할 때 사용하는 방식입니다. /dev/shm을 공유하여 메모리 복사 없이 데이터를 주고받습니다.
-Kubernetes Shared Memory 가이드에 따라 emptyDir의 매체를 Memory로 설정합니다.
-
-```
-apiVersion: v1
-kind: Pod
-metadata:
-  name: aerial-testbed
-spec:
-  containers:
-  - name: sionna-gen
-    image: my-sionna-gen:latest
-    resources:
-      limits:
-        nvidia.com: 1  # GPU 가속 필요
-    volumeMounts:
-    - mountPath: /dev/shm
-      name: dshm
-  - name: pyaerial-rx
-    image: nvidia-pyaerial:latest
-    resources:
-      limits:
-        nvidia.com: 1
-    volumeMounts:
-    - mountPath: /dev/shm
-      name: dshm
-  volumes:
-  - name: dshm
-    emptyDir:
-      medium: Memory
-      sizeLimit: "2Gi" # 생성할 신호 데이터 크기에 맞게 조절
-```
-아키텍처 구현 핵심 포인트
+### 아키텍처 구현 핵심 포인트 ###
 * gRPC 방식: Pod가 서로 다른 노드에 있어도 작동하므로 확장성이 좋습니다.
 * Shared Memory 방식: 한 노드(EC2 G5 등) 안에서만 작동하지만, 지연 시간이 거의 없습니다. 실시간 L1 처리에 강력히 추천합니다.
 * Docker 공유: Shared Memory를 쓰려면 두 컨테이너가 동일한 IPC 네임스페이스를 공유해야 할 수도 있으므로, 필요시 hostIPC: true 설정을 쿠버네티스 공식 문서를 참조하여 추가하세요.
 
-
-----
-네, 작성하신 코드는 CPU에서도 문제없이 돌아갑니다.
-NVIDIA Sionna 공식 문서에 따르면, 시오나는 TensorFlow를 기반으로 작동하기 때문에 별도의 GPU가 없으면 자동으로 CPU를 사용하여 연산을 수행합니다.
-다만, 몇 가지 참고하실 점이 있습니다:
-속도 차이: 시오나는 대규모 병렬 연산(Monte-Carlo 시뮬레이션 등)에 최적화되어 있어, NVIDIA 개발자 블로그에서 강조하듯 GPU(CUDA) 사용 시 수십~수백 배 더 빠릅니다. 실시간으로 PyAerial에 던질 만큼 많은 양을 생성하신다면 CPU 점유율이 꽤 높을 거예요.
-데이터 타입: 코드의 iq_samples는 complex64인데, 이를 바이너리로 변환하여 전송할 때 엔디안(Endian)이나 메모리 레이아웃이 PyAerial 측 규격(보통 int16 I/Q로 변환이 필요한 경우도 있음)과 맞는지 확인이 필요합니다.
-최적화: CPU 환경이라면 batch_size를 적절히 조절하여 지연 시간(Latency)을 체크해 보시는 것이 좋습니다.
-PyAerial Pod로 데이터를 넘기실 때, gRPC를 쓰실 건가요 아니면 Shared Memory 방식을 쓰실 건가요? 방식에 따라 넘파이(Numpy) 직렬화 팁을 드릴 수 있습니다.
 
