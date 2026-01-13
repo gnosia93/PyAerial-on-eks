@@ -17,6 +17,8 @@
 
 * [C6. 그라비톤 기반 L2/L3 스택 구현](https://github.com/gnosia93/aerial-on-eks/blob/main/apps/graviton-L2L3-stack.md)
 
+* [C7. 모니터링]()
+
 ### _Appendix_ ###
 
 * [VS Code 노트북 실행하기](https://github.com/gnosia93/aerial-on-eks/blob/main/lesson/c4-vs-code-notebook.md)
