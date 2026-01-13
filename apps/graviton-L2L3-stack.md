@@ -55,7 +55,7 @@ try:
         time.sleep(0.01) # 처리 주기 조절
 except KeyboardInterrupt:
     print("Stack stopped.")
-
+```
 
 * 데이터 직렬화: TX(x86)에서 L2/L3(ARM)로 데이터를 보낼 때, 엔디안(Endian) 문제가 발생하지 않도록 Protobuf나 Pickle 등을 사용해 직렬화하는 것이 안전합니다.
 * 이 구조에서 Graviton(L2/L3)은 직접적인 물리 신호(IQ 샘플)를 건드리기보다, 데이터를 '캡슐화(Encapsulation)'하여 수신측으로 전달하는 데이터 게이트웨이 역할을 한다.
