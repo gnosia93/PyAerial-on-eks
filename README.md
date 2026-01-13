@@ -31,7 +31,7 @@
 * [C8. Gitlab CI/CD]
 
 
-### _Instance Selection_ ### 
+### _Instance Consideration_ ### 
 
   * G 타입 (Shared Memory)
     * 데이터 복사시 CPU가 개입하여 인터럽트를 처리하고 데이터를 메모리에 배치.
