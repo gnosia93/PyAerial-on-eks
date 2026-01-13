@@ -1,7 +1,7 @@
 ## 시그널 제너레이터 (TX) ##
 NVIDIA PyAerial 및 Triton gRPC 인프라 환경에서 Sionna 생성 신호를 실시간 전송하기 위한 gRPC 구현 코드이다. TensorFlow complex64 텐서를 tobytes()로 직렬화하여 protobuf bytes 필드에 담아 보내는 방식이 가장 효율적이다.
 
-### 1. Proto 정의 (signal.proto) ###
+### Proto 정의 (signal.proto) ###
 grpc 패키지를 설치한다. 
 ```
 pip install grpcio grpcio-tools
@@ -35,7 +35,7 @@ signal_pb2.py: 메시지 규격(SignalRequest, SignalResponse)이 정의된 파�
 signal_pb2_grpc.py: 서비스 서버/클라이언트 로직(SignalStreamer)이 정의된 파일.
 ```
 
-### 2. SignalGenerator ###
+### signal_gen.py ###
 gRPC-Python 스트리밍 라이브러리를 활용하여 SignalGenerator와 연결한다.
 ```
 import os
