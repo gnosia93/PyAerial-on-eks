@@ -166,6 +166,11 @@ Wed Dec 10 06:44:46 2025
 aws-node-viewer 로 spot 타입의 gpu 노드가 프로비저닝된 것을 확인한다. 
 ![](https://github.com/gnosia93/aerial-on-eks/blob/main/images/aws-node-viewer.png)
 
+또는 카펜터의 로그를 확인한다.
+```
+kubectl logs -f -n karpenter -l app.kubernetes.io/name=karpenter
+```
+
 ## 레퍼런스 ##
 
 * [Amazon EKS optimized Amazon Linux 2023 accelerated AMIs now available](https://aws.amazon.com/ko/blogs/containers/amazon-eks-optimized-amazon-linux-2023-accelerated-amis-now-available/)
