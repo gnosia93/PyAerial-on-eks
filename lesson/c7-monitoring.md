@@ -81,11 +81,9 @@ spec:
   endpoints:
   - port: metrics # RX Pod에서 8000번 포트에 지정한 이름
     interval: 5s   # 5초마다 실시간 수집
-
+```
 
 ### Grafana 대시보드 구성 ###
 * 실시간 BER: sionna_rx_ber
 * 평균 Throughput (Mbps): rate(sionna_rx_bits_total[1m]) / 1000000
 * Graviton-x86 간 지연 시간: sionna_processing_latency_ms
-
-
