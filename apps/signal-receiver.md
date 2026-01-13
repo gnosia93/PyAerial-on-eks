@@ -9,7 +9,7 @@ cuPHY는 NVIDIA의 Aerial SDK에 포함된 핵심 라이브러리로, 5G NR(New 
 * O-RAN 준수: O-RAN 7.2x 프런트홀 분할(split) 옵션을 지원하며, 3GPP Release 15 사양을 준수
 * 통합 파이프라인: 채널 추정, 등화(Equalization), 빔포밍, LDPC 디코딩 등 계산 집약적인 작업을 병렬로 처리
 
-#### 1. PyAerial 수신부 알고리즘 (pyaerial_rx.py) ####
+### PyAerial 수신부 알고리즘 (pyaerial_rx.py) ###
 ```
 import grpc
 import signal_pb2
