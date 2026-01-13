@@ -32,6 +32,10 @@ import sionna as sn
 from sionna.utils import BinarySource, QAMSource
 from sionna.channel import AWGN
 
+# reciever_channel = "pyaerial-service.default.svc.cluster.local:50051"
+# 동일 네임스페이스인 경우 아래와 같이 생략가능.
+reciever_channel = "pyaerial-service:50051"
+
 class SignalGenerator(tf.keras.Model):
     def __init__(self, num_bits_per_symbol=4):
         super().__init__()
@@ -46,7 +50,7 @@ class SignalGenerator(tf.keras.Model):
         return y
 
 # gRPC 클라이언트 설정
-channel = grpc.insecure_channel('localhost:50051')
+channel = grpc.insecure_channel(reciever_channel)
 stub = signal_pb2_grpc.SignalStreamerStub(channel)
 
 gen = SignalGenerator()
@@ -78,7 +82,6 @@ except KeyboardInterrupt:
 * 데이터 타입: 코드의 iq_samples는 complex64인데, 이를 바이너리로 변환하여 전송할 때 엔디안(Endian)이나 메모리 레이아웃이 PyAerial 측 규격(보통 int16 I/Q로 변환이 필요한 경우도 있음)과 맞는지 확인이 필요합니다.
 * PyAerial Pod 측(Server)에서는 수신한 bytes 데이터를 np.frombuffer(request.iq_data, dtype=np.complex64).reshape(request.shape)로 복원하여 cuPHY 파이프라인에 주입할 수 있습니다. 
 * 수신 측에서 NVIDIA Aerial SDK의 어떤 모듈(예: PUSCH/PDSCH 디코더)로 데이터를 넘길 계획이신가요?
-
 
 ## Dockerfile ##
 Sionna는 GPU 가속을 위해 NVIDIA TensorFlow 컨테이너 위에서 돌리는 것이 가장 좋다.
