@@ -115,10 +115,9 @@ SUBNET_YAML=""
 if [ -f SUBNET_IDS ]; then
     rm SUBNET_IDS
 fi
-for STR in $SUBNET_IDS; do
-   az=$(echo $STR | cut -d' ' -f1)
-   subnet=$(echo $STR | cut -d' ' -f2)
-   echo "      ${az}: { id: ${subnet} }" >> SUBNET_IDS
+echo "$SUBNET_IDS" | while read -r az subnet_id;
+do
+    echo "      ${az}: { id: ${subnet_id} }" >> SUBNET_IDS
 done
 ```
 [결과]
