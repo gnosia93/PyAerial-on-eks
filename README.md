@@ -38,8 +38,7 @@
 * [C8. Gitlab CI/CD]
 
 
-
-
 ### _Appendix_ ###
 
 * [VS Code 노트북 실행하기](https://github.com/gnosia93/aerial-on-eks/blob/main/lesson/c4-vs-code-notebook.md)
+* https://ec2spotworkshops.com/ec2-auto-scaling-with-multiple-instance-types-and-purchase-options/spot_resilience.html
